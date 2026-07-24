@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  frontend-template:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend-template
+    restart: unless-stopped
+    ports:
+      - "5135:80"
+    environment:
+      - GIT_REPO_URL=https://github.com/IvanRRiadhy/WAAPI.git
+      - GIT_BRANCH=main
+      - TZ=Asia/Jakarta
+      - API_BASE_URL=https://wapi.app.bio-experience.com
+    volumes:
+      # Persist the cloned repo so restarts don't re-clone from scratch
+      - frontend-template-repo:/app/repo
+      # Persist update logs
+      - frontend-template-logs:/var/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  frontend-template-repo:
+  frontend-template-logs:
