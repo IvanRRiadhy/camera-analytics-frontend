@@ -1,31 +1,32 @@
-import React from 'react';
+import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { FullLayout } from './layouts/FullLayout';
 import { Dashboard } from './views/Dashboard';
+import { Monitoring } from './views/Monitoring';
 import { Settings } from './views/Settings';
 import { Cameras } from './views/Cameras';
 import { Rooms } from './views/Rooms';
+import { FleetOverview } from './views/FleetOverview';
+import { NodeDetailView } from './views/NodeDetailView';
 import { Login } from './views/Login';
 import { Register } from './views/Register';
+import { AuthGuard, GuestGuard } from './components/Guards';
+import ModuleCatalog from './views/ModuleCatalog';
+import PipelineAssignmentView from './views/PipelineAssignmentView';
+import RuntimeObservabilityView from './views/RuntimeObservabilityView';
 
-// Auth Guard: Redirects to /login if user is not authenticated
-const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-  if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
-  }
-  return <>{children}</>;
-};
+// Lazy-Loaded DevTools Platform Module (Zero Production Bundle Overhead)
+const DevToolsLayout = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsLayout })));
+const DevToolsDashboardPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsDashboardPage })));
+const DevToolsStoresPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsStoresPage })));
+const DevToolsSignalRPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsSignalRPage })));
+const DevToolsDispatcherPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsDispatcherPage })));
+const DevToolsBootstrapPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsBootstrapPage })));
+const DevToolsPerformancePage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsPerformancePage })));
+const DevToolsLogsPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsLogsPage })));
+const DevToolsConfigPage = lazy(() => import('./modules/devtools').then((m) => ({ default: m.DevToolsConfigPage })));
 
-// Guest Guard: Redirects to /dashboard if user is already authenticated
-const GuestGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-  console.log("isLoggedIn", isLoggedIn)
-  if (isLoggedIn) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <>{children}</>;
-};
+import { SiteListPage } from './modules/site';
 
 export const router = createBrowserRouter([
   {
@@ -38,8 +39,18 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <Navigate to="/dashboard" replace /> },
       { path: '/dashboard', element: <Dashboard /> },
+      { path: '/monitoring', element: <Monitoring /> },
+      { path: '/engines', element: <FleetOverview /> },
+      { path: '/engines/:instanceId', element: <NodeDetailView /> },
       { path: '/cameras', element: <Cameras /> },
       { path: '/rooms', element: <Rooms /> },
+      { path: '/sites', element: <SiteListPage /> },
+      { path: '/master/sites', element: <SiteListPage /> },
+      { path: '/analytics/catalog', element: <ModuleCatalog /> },
+      { path: '/catalog', element: <ModuleCatalog /> },
+      { path: '/analytics/pipelines', element: <PipelineAssignmentView /> },
+      { path: '/analytics/runtime', element: <RuntimeObservabilityView /> },
+      { path: '/runtime', element: <RuntimeObservabilityView /> },
       { path: '/settings', element: <Settings /> },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
@@ -59,6 +70,25 @@ export const router = createBrowserRouter([
         <Register />
       </GuestGuard>
     ),
+  },
+  {
+    path: '/_devtools',
+    element: (
+      <Suspense fallback={<div style={{ padding: 24, color: '#38bdf8', background: '#030712', height: '100vh' }}>Loading DevTools Engine...</div>}>
+        <DevToolsLayout />
+      </Suspense>
+    ),
+    children: [
+      { path: '', element: <DevToolsDashboardPage /> },
+      { path: 'stores', element: <DevToolsStoresPage /> },
+      { path: 'stores/:storeName', element: <DevToolsStoresPage /> },
+      { path: 'signalr', element: <DevToolsSignalRPage /> },
+      { path: 'dispatcher', element: <DevToolsDispatcherPage /> },
+      { path: 'bootstrap', element: <DevToolsBootstrapPage /> },
+      { path: 'performance', element: <DevToolsPerformancePage /> },
+      { path: 'logs', element: <DevToolsLogsPage /> },
+      { path: 'config', element: <DevToolsConfigPage /> },
+    ],
   },
 ]);
 

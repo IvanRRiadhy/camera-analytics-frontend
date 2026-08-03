@@ -16,6 +16,12 @@ import {
 } from '@mui/material';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 
+interface UserRecord {
+  username: string;
+  password?: string;
+  email?: string;
+}
+
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +45,7 @@ export const Login: React.FC = () => {
 
     // Check localStorage registered users
     const registeredUsersJSON = localStorage.getItem('registeredUsers');
-    let users = [];
+    let users: UserRecord[] = [];
     if (registeredUsersJSON) {
       try {
         users = JSON.parse(registeredUsersJSON);
@@ -48,7 +54,7 @@ export const Login: React.FC = () => {
       }
     }
 
-    const matchedUser = users.find((u: any) => u.username === usernameVal && u.password === passwordVal);
+    const matchedUser = users.find((u) => u.username === usernameVal && u.password === passwordVal);
     const isDefaultAdmin = usernameVal === 'admin' && passwordVal === 'P@ssw0rd';
 
     if (isDefaultAdmin || matchedUser) {

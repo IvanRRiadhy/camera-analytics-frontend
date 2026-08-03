@@ -41,10 +41,17 @@ import {
 import { useCameras, type Camera } from '../hooks/useCameras';
 import { useRooms } from '../hooks/useRooms';
 import { useZones } from '../hooks/useZones';
+import { useCameraStore, selectAllCameras } from '../store/camera.store';
+import { validatePolygon } from '../modules/zone';
+import UniversalVideoPlayer from '../components/UniversalVideoPlayer';
 
 export const Cameras: React.FC = () => {
-  const { cameras, loading, addCamera, updateCamera, deleteCamera } = useCameras();
+  const { cameras: rawCameras, loading, addCamera, updateCamera, deleteCamera } = useCameras();
   const { rooms, floors, buildings } = useRooms();
+
+  // Read normalized camera records directly from CameraStore or React Query
+  const storeCameras = useCameraStore(selectAllCameras);
+  const cameras = storeCameras.length > 0 ? (storeCameras as unknown as Camera[]) : rawCameras;
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -172,8 +179,8 @@ export const Cameras: React.FC = () => {
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDrawing) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    const x = Number(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)).toFixed(4));
+    const y = Number(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)).toFixed(4));
     setCurrentPoints((prev) => [...prev, [x, y]]);
   };
 
@@ -198,7 +205,16 @@ export const Cameras: React.FC = () => {
   }, [roomZones, previewCamera]);
 
   const handleSaveZone = async () => {
-    if (!previewCamera || currentPoints.length < 3) return;
+    if (!previewCamera) return;
+
+    // Validate Spatial Polygon Coordinates & Topology (0.0 to 1.0 Normalized)
+    const validation = validatePolygon(currentPoints);
+    if (!validation.valid) {
+      alert(`Spatial Polygon Error: ${validation.reason}`);
+      return;
+    }
+
+    const polygonToSave = validation.normalizedPoints || currentPoints;
 
     if (selectedZoneType === 'new') {
       if (!newZoneName.trim()) {
@@ -211,7 +227,7 @@ export const Cameras: React.FC = () => {
         cameraConfigs: [
           {
             cameraId: previewCamera.id,
-            polygon: currentPoints,
+            polygon: polygonToSave,
           },
         ],
       });
@@ -223,7 +239,7 @@ export const Cameras: React.FC = () => {
       }
       await saveCameraConfigToZone(selectedZoneId, {
         cameraId: previewCamera.id,
-        polygon: currentPoints,
+        polygon: polygonToSave,
       });
     }
 
@@ -261,7 +277,7 @@ export const Cameras: React.FC = () => {
                 labelId="status-filter-label"
                 value={statusFilter}
                 label="Status"
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'online' | 'offline')}
               >
                 <MenuItem value="all">All Statuses</MenuItem>
                 <MenuItem value="online">Online</MenuItem>
@@ -380,8 +396,13 @@ export const Cameras: React.FC = () => {
                       </Box>
                     </Box>
 
+                    {/* Video Player Feed Container */}
+                    <Box sx={{ width: '100%', height: 160, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider', bgcolor: '#000' }}>
+                      <UniversalVideoPlayer streamUrl={camera.rtspUrl} />
+                    </Box>
+
                     {/* Body: Description */}
-                    <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, minHeight: 40, fontSize: '0.875rem' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, minHeight: 36, fontSize: '0.875rem' }}>
                       {camera.description || 'No description provided.'}
                     </Typography>
 
@@ -596,73 +617,16 @@ export const Cameras: React.FC = () => {
                   }}
                   onClick={handleCanvasClick}
                 >
-                  {/* Absolute positioning wrapper for content */}
+                  {/* Universal Live Video Stream Player */}
                   <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                    {previewCamera.rtspUrl.startsWith('rtsp://') ? (
-                      <Box 
-                        sx={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          position: 'relative'
-                        }}
-                      >
-                        {/* Scanline pattern */}
-                        <Box 
-                          sx={{ 
-                            position: 'absolute', 
-                            top: 0, 
-                            left: 0, 
-                            right: 0, 
-                            bottom: 0, 
-                            backgroundImage: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
-                            backgroundSize: '100% 4px, 6px 100%',
-                            pointerEvents: 'none',
-                            zIndex: 1
-                          }}
-                        />
-                        <IconVideo size={48} style={{ color: 'var(--mui-palette-text-secondary)', marginBottom: '16px', opacity: 0.3 }} />
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700, opacity: 0.7 }}>
-                          Simulated RTSP Stream
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, fontFamily: 'monospace', opacity: 0.5 }}>
-                          {previewCamera.rtspUrl}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Box 
-                        component="img"
-                        src={previewCamera.rtspUrl}
-                        alt="Live Camera Feed"
-                        sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.style.display = 'none';
-                          // Show loading error message
-                          const parent = e.currentTarget.parentElement;
-                          if (parent) {
-                            const errorEl = document.createElement('div');
-                            errorEl.innerHTML = '<p style="color:#ef4444;font-weight:600">Camera Feed Load Error</p><p style="font-size:12px;color:#94a3b8">Please verify the IP stream URL is reachable</p>';
-                            errorEl.style.display = 'flex';
-                            errorEl.style.flexDirection = 'column';
-                            errorEl.style.alignItems = 'center';
-                            errorEl.style.justifyContent = 'center';
-                            errorEl.style.height = '100%';
-                            parent.appendChild(errorEl);
-                          }
-                        }}
-                      />
-                    )}
+                    <UniversalVideoPlayer streamUrl={previewCamera.rtspUrl} />
                   </Box>
 
                   {/* SVG Overlays for Polygons */}
                   <svg 
                     viewBox="0 0 100 100" 
                     preserveAspectRatio="none"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 12 }}
                   >
                     {/* Render saved camera zones */}
                     {cameraZones.map((z) => {
@@ -670,7 +634,13 @@ export const Cameras: React.FC = () => {
                       if (!config) return null;
                       
                       const isHovered = hoveredZoneId === z.id;
-                      const pointsStr = config.polygon.map(([px, py]) => `${px},${py}`).join(' ');
+                      const pointsStr = config.polygon
+                        .map(([px, py]) => {
+                          const xVal = px <= 1 ? px * 100 : px;
+                          const yVal = py <= 1 ? py * 100 : py;
+                          return `${xVal},${yVal}`;
+                        })
+                        .join(' ');
 
                       return (
                         <polygon
@@ -687,7 +657,13 @@ export const Cameras: React.FC = () => {
                     {/* Render active drawing polygon */}
                     {isDrawing && currentPoints.length > 0 && (
                       <polygon
-                        points={currentPoints.map(([px, py]) => `${px},${py}`).join(' ')}
+                        points={currentPoints
+                          .map(([px, py]) => {
+                            const xVal = px <= 1 ? px * 100 : px;
+                            const yVal = py <= 1 ? py * 100 : py;
+                            return `${xVal},${yVal}`;
+                          })
+                          .join(' ')}
                         fill="rgba(56, 189, 248, 0.35)"
                         stroke="#0284c7"
                         strokeWidth="1.5"
@@ -696,24 +672,28 @@ export const Cameras: React.FC = () => {
                   </svg>
 
                   {/* Draw dot markers on top */}
-                  {isDrawing && currentPoints.map(([px, py], idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        position: 'absolute',
-                        left: `${px}%`,
-                        top: `${py}%`,
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        bgcolor: '#0284c7',
-                        border: '2px solid #fff',
-                        transform: 'translate(-50%, -50%)',
-                        pointerEvents: 'none',
-                        zIndex: 3
-                      }}
-                    />
-                  ))}
+                  {isDrawing && currentPoints.map(([px, py], idx) => {
+                    const xPct = px <= 1 ? px * 100 : px;
+                    const yPct = py <= 1 ? py * 100 : py;
+                    return (
+                      <Box
+                        key={idx}
+                        sx={{
+                          position: 'absolute',
+                          left: `${xPct}%`,
+                          top: `${yPct}%`,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: '#0284c7',
+                          border: '2px solid #fff',
+                          transform: 'translate(-50%, -50%)',
+                          pointerEvents: 'none',
+                          zIndex: 13
+                        }}
+                      />
+                    );
+                  })}
                   
                   {/* Floating Drawing Controller overlay */}
                   <Box 
@@ -807,7 +787,7 @@ export const Cameras: React.FC = () => {
                         value={selectedZoneType}
                         label="Association Type"
                         onChange={(e) => {
-                          setSelectedZoneType(e.target.value as any);
+                          setSelectedZoneType(e.target.value as 'new' | 'existing');
                           setSelectedZoneId('');
                         }}
                       >

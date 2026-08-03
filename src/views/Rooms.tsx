@@ -34,6 +34,7 @@ import {
 import { useRooms } from '../hooks/useRooms';
 import type { Building, Floor, Room } from '../hooks/useRooms';
 import { useZones } from '../hooks/useZones';
+import type { Zone, CameraZoneConfig } from '../hooks/useZones';
 import { useCameras } from '../hooks/useCameras';
 
 export const Rooms: React.FC = () => {
@@ -55,10 +56,10 @@ export const Rooms: React.FC = () => {
   const { zones } = useZones();
   const { cameras } = useCameras();
 
-  const getZoneTooltipText = (z: any) => {
+  const getZoneTooltipText = (z: Zone) => {
     if (z.cameraConfigs.length === 0) return 'No cameras mapped';
     const camNames = z.cameraConfigs
-      .map((config: any) => {
+      .map((config: CameraZoneConfig) => {
         const camera = cameras.find((c) => c.id === config.cameraId);
         return camera ? camera.name : 'Unknown Camera';
       })
@@ -133,7 +134,7 @@ export const Rooms: React.FC = () => {
     setEditingId(item.id);
     setFormName(item.name);
     setFormDescription(item.description);
-    setFormImage(item.image);
+    setFormImage(item.image || '');
     setFormError(null);
     setDialogOpen(true);
   };

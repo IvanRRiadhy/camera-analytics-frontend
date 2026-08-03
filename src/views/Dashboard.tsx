@@ -1,16 +1,31 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Card, CardContent, Typography, Grid, useTheme } from '@mui/material';
-import { IconVideo, IconActivity, IconDatabase, IconAlertCircle } from '@tabler/icons-react';
+import React, { useMemo } from 'react';
+import { Box, Card, CardContent, Typography, Grid, Chip, useTheme } from '@mui/material';
+import { IconVideo, IconActivity, IconDatabase, IconAlertCircle, IconWifi, IconWifiOff } from '@tabler/icons-react';
 import Chart from 'react-apexcharts';
+import type { ApexOptions } from 'apexcharts';
+import { useEngineHealth } from '../hooks/useEngineHealth';
+import { usePipelineRegistry } from '../hooks/usePipelineRegistry';
+import { useSignalR } from '../hooks/useSignalR';
+
+const DAILY_CATEGORIES = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+const DONUT_LABELS = ['Person', 'Vehicle', 'Animal', 'Unknown'];
 
 export const Dashboard: React.FC = () => {
   const theme = useTheme();
-  const [tabIndex] = useState(2);
 
-  const dailyCategories = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+  const { connectionState } = useSignalR();
+  const { data: healthData, isLoading: healthLoading } = useEngineHealth();
+  const { data: pipelinesData, isLoading: pipelinesLoading } = usePipelineRegistry();
+
+  const totalEngines = healthData?.totalEngines ?? 0;
+  const healthyCount = healthData?.healthyCount ?? 0;
+  const warningCount = healthData?.warningCount ?? 0;
+  const offlineCount = healthData?.offlineCount ?? 0;
+  const avgHealthScore = healthData ? Math.round(healthData.averageHealthScore) : 100;
+  const activePipelinesCount = pipelinesData ? pipelinesData.filter(p => p.status === 'Running' || p.status === 'Assigned').length : 0;
 
   // Dummy series data for last 7 intervals (AI detections: People, Vehicles)
-  const dailySeries = [
+  const dailySeries = useMemo(() => [
     {
       name: 'Person Detections',
       data: [420, 510, 680, 590, 710, 830, 640]
@@ -19,14 +34,14 @@ export const Dashboard: React.FC = () => {
       name: 'Vehicle Detections',
       data: [150, 240, 190, 310, 280, 180, 220]
     }
-  ];
+  ], []);
 
-  const chartColors = [
+  const chartColors = useMemo(() => [
     theme.palette.primary.main,
     theme.palette.secondary.main,
-  ];
+  ], [theme.palette.primary.main, theme.palette.secondary.main]);
 
-  const commonOptions: any = useMemo(() => ({
+  const commonOptions: ApexOptions = useMemo(() => ({
     chart: {
       fontFamily: theme.typography.fontFamily,
       toolbar: { show: false },
@@ -86,29 +101,28 @@ export const Dashboard: React.FC = () => {
         },
         xaxis: {
           ...commonOptions.xaxis,
-          categories: dailyCategories,
+          categories: DAILY_CATEGORIES,
         }
       }
     };
-  }, [commonOptions, dailyCategories]);
+  }, [commonOptions]);
 
-  // Donut chart logic for event distribution (Person, Vehicle, Animal, Unknown)
-  const donutSeries = [65, 25, 8, 2];
-  const donutLabels = ['Person', 'Vehicle', 'Animal', 'Unknown'];
-  const donutColors = [
+  // Donut chart logic for event distribution
+  const donutSeries = useMemo(() => [65, 25, 8, 2], []);
+  const donutColors = useMemo(() => [
     theme.palette.primary.main,
     theme.palette.secondary.main,
     theme.palette.success.main,
     theme.palette.text.secondary,
-  ];
+  ], [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.success.main, theme.palette.text.secondary]);
 
-  const donutOptions: any = useMemo(() => ({
+  const donutOptions: ApexOptions = useMemo(() => ({
     chart: {
       fontFamily: theme.typography.fontFamily,
       background: 'transparent',
     },
     colors: donutColors,
-    labels: donutLabels,
+    labels: DONUT_LABELS,
     stroke: {
       colors: [theme.palette.background.paper],
       width: 2,
@@ -120,7 +134,7 @@ export const Dashboard: React.FC = () => {
         colors: [theme.palette.text.primary],
       },
       markers: {
-        radius: 4,
+        size: 4,
       }
     },
     dataLabels: {
@@ -163,10 +177,28 @@ export const Dashboard: React.FC = () => {
         formatter: (val: number) => `${val}%`
       }
     }
-  }), [theme, donutColors, donutLabels]);
+  }), [theme, donutColors]);
+
+  const getConnChip = () => {
+    if (connectionState === 'Connected') {
+      return <Chip icon={<IconWifi size={16} />} label="LIVE SIGNALR CONNECTED" color="success" size="small" sx={{ fontWeight: 700 }} />;
+    }
+    if (connectionState === 'Reconnecting') {
+      return <Chip icon={<IconWifiOff size={16} />} label="SIGNALR RECONNECTING..." color="warning" size="small" sx={{ fontWeight: 700 }} />;
+    }
+    return <Chip icon={<IconWifiOff size={16} />} label="SIGNALR DISCONNECTED" color="error" size="small" sx={{ fontWeight: 700 }} />;
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Realtime Connection Status Bar */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          Enterprise Analytics Dashboard
+        </Typography>
+        {getConnChip()}
+      </Box>
+
       {/* Top Cards Statistics Summary */}
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -187,13 +219,13 @@ export const Dashboard: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Active Cameras
+                  Active Pipelines
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
-                  14 / 15
+                  {pipelinesLoading ? '...' : activePipelinesCount}
                 </Typography>
                 <Typography variant="caption" color="success.main" sx={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                  93.3% <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>online status</Typography>
+                  {pipelinesData?.length ?? 0} Total Registered
                 </Typography>
               </Box>
             </CardContent>
@@ -218,13 +250,13 @@ export const Dashboard: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  AI Detections Today
+                  AI Fleet Health Score
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
-                  5,820
+                  {healthLoading ? '...' : `${avgHealthScore} / 100`}
                 </Typography>
-                <Typography variant="caption" color="success.main" sx={{ fontWeight: 700, display: 'block', mt: 0.5 }}>
-                  +18.4% vs yesterday
+                <Typography variant="caption" color={avgHealthScore >= 80 ? 'success.main' : 'warning.main'} sx={{ fontWeight: 700, display: 'block', mt: 0.5 }}>
+                  {healthyCount} Healthy Engine Nodes
                 </Typography>
               </Box>
             </CardContent>
@@ -249,13 +281,13 @@ export const Dashboard: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Storage Usage
+                  Engine Nodes Cluster
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
-                  78.2%
+                  {healthLoading ? '...' : totalEngines} Nodes
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: 'block', mt: 0.5 }}>
-                  7.82 TB / 10.0 TB consumed
+                  {healthyCount} Online / {offlineCount} Offline
                 </Typography>
               </Box>
             </CardContent>
@@ -280,13 +312,13 @@ export const Dashboard: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Critical Alerts
+                  Warnings & Offline
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
-                  2
+                  {warningCount + offlineCount}
                 </Typography>
-                <Typography variant="caption" color="error.main" sx={{ fontWeight: 700, display: 'block', mt: 0.5 }}>
-                  Immediate review required
+                <Typography variant="caption" color={warningCount + offlineCount > 0 ? 'error.main' : 'success.main'} sx={{ fontWeight: 700, display: 'block', mt: 0.5 }}>
+                  {warningCount} Warning | {offlineCount} Offline
                 </Typography>
               </Box>
             </CardContent>
@@ -298,55 +330,46 @@ export const Dashboard: React.FC = () => {
       <Grid container spacing={3}>
         {/* Daily Analytics Chart */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ p: 3.5, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3, '&:last-child': { pb: 3.5 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    AI Detection Timeline
+                    Vision Detection Telemetry
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Detections grouped by time interval (today)
+                  <Typography variant="caption" color="text.secondary">
+                    Aggregated AI detection events across active camera streams
                   </Typography>
                 </Box>
               </Box>
 
-              {/* Chart Render */}
-              <Box sx={{ flexGrow: 1, width: '100%', minHeight: 320 }}>
-                <Chart 
-                  key={`${theme.palette.mode}-${tabIndex}`}
-                  options={chartConfig.options}
-                  series={dailySeries}
-                  type={chartConfig.type}
-                  height={320}
-                />
-              </Box>
+              <Chart
+                options={chartConfig.options}
+                series={dailySeries}
+                type={chartConfig.type}
+                height={320}
+              />
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Current Distribution Pie Chart */}
+        {/* Object Class Distribution Donut Chart */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ p: 3.5, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3, '&:last-child': { pb: 3.5 } }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Classification Share
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Object category classification share percentage
-                </Typography>
-              </Box>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Object Class Distribution
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 3 }}>
+                Multi-class detection breakdown
+              </Typography>
 
-              {/* Donut Chart Render */}
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, minHeight: 280 }}>
-                <Chart 
-                  key={theme.palette.mode}
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                <Chart
                   options={donutOptions}
                   series={donutSeries}
                   type="donut"
-                  width="100%"
-                  height={280}
+                  height={300}
                 />
               </Box>
             </CardContent>
@@ -356,5 +379,3 @@ export const Dashboard: React.FC = () => {
     </Box>
   );
 };
-
-export default Dashboard;

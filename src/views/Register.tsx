@@ -16,6 +16,14 @@ import {
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import { PhoneInput } from '../components/PhoneInput';
 
+interface UserRecord {
+  username: string;
+  company?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+}
+
 export const Register: React.FC = () => {
   const [username, setUsername] = useState('');
   const [company, setCompany] = useState('');
@@ -76,7 +84,7 @@ export const Register: React.FC = () => {
 
     // Store in localStorage registered users
     const registeredUsersJSON = localStorage.getItem('registeredUsers');
-    let users = [];
+    let users: UserRecord[] = [];
     if (registeredUsersJSON) {
       try {
         users = JSON.parse(registeredUsersJSON);
@@ -86,17 +94,17 @@ export const Register: React.FC = () => {
     }
 
     // Check if user already exists
-    if (users.some((u: any) => u.username === username.trim())) {
+    if (users.some((u) => u.username === username.trim())) {
       setError('Username already registered.');
       return;
     }
 
-    const newUser = {
+    const newUser: UserRecord = {
       username: username.trim(),
       company: company.trim(),
       phone: whatsapp,
       email: email.trim().toLowerCase(),
-      password, // In a real app this would be hashed
+      password,
     };
 
     users.push(newUser);

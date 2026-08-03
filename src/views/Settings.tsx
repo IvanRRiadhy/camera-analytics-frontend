@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Card, 
@@ -31,12 +31,28 @@ interface UserProfile {
 }
 
 export const Settings: React.FC = () => {
-  // Profile settings state
-  const [profile, setProfile] = useState<UserProfile>({
-    username: 'Admin Developer',
-    company: 'CCTV Analytics Corp',
-    phone: '6281234567890',
-    email: 'admin@cctv.local'
+  // Profile settings state initialized synchronously from localStorage
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          username: parsed.username || 'Admin Developer',
+          company: parsed.company || 'CCTV Analytics Corp',
+          phone: parsed.phone || '6281234567890',
+          email: parsed.email || 'admin@cctv.local'
+        };
+      } catch {
+        // Fall through to defaults
+      }
+    }
+    return {
+      username: 'Admin Developer',
+      company: 'CCTV Analytics Corp',
+      phone: '6281234567890',
+      email: 'admin@cctv.local'
+    };
   });
   
   const [countryCode, setCountryCode] = useState('ID');
@@ -44,47 +60,54 @@ export const Settings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // CCTV System settings state
-  const [detectPerson, setDetectPerson] = useState(true);
-  const [detectVehicle, setDetectVehicle] = useState(true);
-  const [detectAnimal, setDetectAnimal] = useState(false);
-  const [retentionDays, setRetentionDays] = useState(30);
-  const [sensitivity, setSensitivity] = useState(80);
-  const [webhookUrl, setWebhookUrl] = useState('https://api.cctv.local/webhook/alerts');
-
-  // Load user data on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('currentUser');
+  // CCTV System settings state initialized synchronously from localStorage
+  const [detectPerson, setDetectPerson] = useState<boolean>(() => {
+    const saved = localStorage.getItem('cctvSettings');
     if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setProfile({
-          username: parsed.username || 'Admin Developer',
-          company: parsed.company || 'CCTV Analytics Corp',
-          phone: parsed.phone || '6281234567890',
-          email: parsed.email || 'admin@cctv.local'
-        });
-      } catch {
-        // use default profile
-      }
+      try { return JSON.parse(saved).detectPerson ?? true; } catch { /* ignore */ }
     }
+    return true;
+  });
 
-    // Load CCTV settings if they exist
-    const savedCCTV = localStorage.getItem('cctvSettings');
-    if (savedCCTV) {
-      try {
-        const parsed = JSON.parse(savedCCTV);
-        setDetectPerson(parsed.detectPerson ?? true);
-        setDetectVehicle(parsed.detectVehicle ?? true);
-        setDetectAnimal(parsed.detectAnimal ?? false);
-        setRetentionDays(parsed.retentionDays ?? 30);
-        setSensitivity(parsed.sensitivity ?? 80);
-        setWebhookUrl(parsed.webhookUrl ?? 'https://api.cctv.local/webhook/alerts');
-      } catch {
-        // use default state
-      }
+  const [detectVehicle, setDetectVehicle] = useState<boolean>(() => {
+    const saved = localStorage.getItem('cctvSettings');
+    if (saved) {
+      try { return JSON.parse(saved).detectVehicle ?? true; } catch { /* ignore */ }
     }
-  }, []);
+    return true;
+  });
+
+  const [detectAnimal, setDetectAnimal] = useState<boolean>(() => {
+    const saved = localStorage.getItem('cctvSettings');
+    if (saved) {
+      try { return JSON.parse(saved).detectAnimal ?? false; } catch { /* ignore */ }
+    }
+    return false;
+  });
+
+  const [retentionDays, setRetentionDays] = useState<number>(() => {
+    const saved = localStorage.getItem('cctvSettings');
+    if (saved) {
+      try { return JSON.parse(saved).retentionDays ?? 30; } catch { /* ignore */ }
+    }
+    return 30;
+  });
+
+  const [sensitivity, setSensitivity] = useState<number>(() => {
+    const saved = localStorage.getItem('cctvSettings');
+    if (saved) {
+      try { return JSON.parse(saved).sensitivity ?? 80; } catch { /* ignore */ }
+    }
+    return 80;
+  });
+
+  const [webhookUrl, setWebhookUrl] = useState<string>(() => {
+    const saved = localStorage.getItem('cctvSettings');
+    if (saved) {
+      try { return JSON.parse(saved).webhookUrl ?? 'https://api.cctv.local/webhook/alerts'; } catch { /* ignore */ }
+    }
+    return 'https://api.cctv.local/webhook/alerts';
+  });
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +141,7 @@ export const Settings: React.FC = () => {
     setSuccess('CCTV configuration saved successfully.');
   };
 
-    return (
+  return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {success && <Alert severity="success" sx={{ borderRadius: 2 }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>}

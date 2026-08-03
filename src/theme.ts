@@ -1,36 +1,38 @@
 import { createTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 
-export const getAppTheme = (_mode: 'light' | 'dark' = 'light'): Theme => {
+export const getAppTheme = (mode: 'light' | 'dark' = 'dark'): Theme => {
   return createTheme({
     palette: {
-      mode: 'light',
+      mode,
       primary: {
-        main: '#e11d48', // Rose-600
+        main: '#38bdf8', // Vivid Electric Blue / Sky-400
+        light: '#7dd3fc',
+        dark: '#0284c7',
       },
       secondary: {
-        main: '#ea580c', // Orange-600
+        main: '#06b6d4', // Cyan-500
       },
       background: {
-        default: '#f8fafc', // Slate-50
-        paper: 'rgba(255, 255, 255, 0.8)', // Glassmorphic translucent default
+        default: '#030712', // Deep Rich Black
+        paper: '#0f172a',   // Dark Navy Charcoal
       },
       text: {
-        primary: '#0f172a',
-        secondary: '#475569',
+        primary: '#f8fafc',
+        secondary: '#94a3b8',
       },
-      divider: 'rgba(225, 29, 72, 0.08)',
+      divider: 'rgba(56, 189, 248, 0.12)',
       success: {
-        main: '#2e7d32', // Green
+        main: '#22c55e', // Emerald Green
       },
       error: {
-        main: '#c62828', // Red
+        main: '#ef4444', // Vivid Red
       },
       warning: {
-        main: '#ef6c00', // Orange
+        main: '#f59e0b', // Amber Orange
       },
       info: {
-        main: '#0277bd', // Blue
+        main: '#38bdf8', // Cyan Blue
       },
     },
     typography: {
@@ -70,22 +72,21 @@ export const getAppTheme = (_mode: 'light' | 'dark' = 'light'): Theme => {
       },
     },
     shape: {
-      borderRadius: 16,
+      borderRadius: 8,
     },
     components: {
       MuiCard: {
         styleOverrides: {
-          root: ({ theme }) => ({
+          root: () => ({
             backgroundImage: 'none',
-            backgroundColor: theme.palette.background.paper,
+            backgroundColor: '#0f172a',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${theme.palette.divider}`,
-            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.3s ease',
+            border: '1px solid rgba(56, 189, 248, 0.15)',
+            transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
             '&:hover': {
-              transform: 'translateY(-4px)',
-              borderColor: 'rgba(225, 29, 72, 0.25)',
-              boxShadow: '0 12px 24px -10px rgba(225, 29, 72, 0.12)',
+              borderColor: 'rgba(56, 189, 248, 0.4)',
+              boxShadow: '0 8px 20px -6px rgba(56, 189, 248, 0.2)',
             },
           }),
         },
@@ -93,7 +94,7 @@ export const getAppTheme = (_mode: 'light' | 'dark' = 'light'): Theme => {
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: 10,
+            borderRadius: 6,
             padding: '6px 16px',
             boxShadow: 'none',
             '&:hover': {
@@ -104,8 +105,8 @@ export const getAppTheme = (_mode: 'light' | 'dark' = 'light'): Theme => {
       },
       MuiDivider: {
         styleOverrides: {
-          root: ({ theme }) => ({
-            borderColor: theme.palette.divider,
+          root: () => ({
+            borderColor: 'rgba(56, 189, 248, 0.12)',
           }),
         },
       },

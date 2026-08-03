@@ -3,17 +3,20 @@ import { RouterProvider } from 'react-router';
 import { getAppTheme } from './theme';
 import { router } from './router';
 import { ThemeToggleContext } from './context/ThemeToggleContext';
+import { SignalRProvider } from './context/SignalRContext';
 
 function App() {
-  const themeMode = 'light';
-  const theme = getAppTheme(themeMode);
+  const themeMode = 'dark';
+  const theme = getAppTheme('dark');
   const toggleTheme = () => {};
 
   return (
     <ThemeToggleContext.Provider value={{ themeMode, toggleTheme }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <RouterProvider router={router} />
+        <SignalRProvider>
+          <RouterProvider router={router} />
+        </SignalRProvider>
       </ThemeProvider>
     </ThemeToggleContext.Provider>
   );

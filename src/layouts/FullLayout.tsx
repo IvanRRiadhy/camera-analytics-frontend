@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
@@ -9,7 +9,6 @@ import {
   ListItemButton, 
   ListItemIcon, 
   ListItemText,
-  useTheme,
   Button
 } from '@mui/material';
 import { 
@@ -17,123 +16,105 @@ import {
   IconSettings,
   IconCamera,
   IconBuilding,
+  IconServer,
+  IconActivity,
+  IconClock,
+  IconBox,
+  IconDeviceAnalytics,
+  IconWaveSine,
 } from '@tabler/icons-react';
 
 export const FullLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const theme = useTheme();
   const queryClient = useQueryClient();
 
-  // Load current logged in user details
-  const [currentUser] = React.useState(() => {
-    try {
-      const saved = localStorage.getItem('currentUser');
-      return saved ? JSON.parse(saved) : { username: 'Admin Developer' };
-    } catch {
-      return { username: 'Admin Developer' };
-    }
-  });
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [localTime, setLocalTime] = useState(new Date().toLocaleTimeString('en-GB', { hour12: false }));
 
   // Navigation configuration
   const navigationTabs = [
-    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <IconLayoutDashboard size={20} /> },
+    { id: 'dashboard', label: 'Dashboard Overview', path: '/dashboard', icon: <IconLayoutDashboard size={20} /> },
+    { id: 'monitoring', label: 'Monitoring (SOC)', path: '/monitoring', icon: <IconActivity size={20} /> },
+    { id: 'runtime', label: 'Runtime Observability', path: '/analytics/runtime', icon: <IconWaveSine size={20} /> },
+    { id: 'catalog', label: 'Plugin Catalog', path: '/analytics/catalog', icon: <IconBox size={20} /> },
+    { id: 'assignments', label: 'Pipeline Assignment', path: '/analytics/pipelines', icon: <IconDeviceAnalytics size={20} /> },
+    { id: 'engines', label: 'Engine Fleet', path: '/engines', icon: <IconServer size={20} /> },
     { id: 'cameras', label: 'Camera Settings', path: '/cameras', icon: <IconCamera size={20} /> },
     { id: 'rooms', label: 'Rooms Settings', path: '/rooms', icon: <IconBuilding size={20} /> },
     { id: 'settings', label: 'Settings', path: '/settings', icon: <IconSettings size={20} /> },
   ] as const;
 
-  // Resolve current page title
   const activeTab = navigationTabs.find(tab => location.pathname.startsWith(tab.path)) || navigationTabs[0];
+  const isMonitoringPage = location.pathname.startsWith('/monitoring');
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
+  const currentDateFormatted = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
+  // Update 24-hour clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLocalTime(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <Box 
       sx={{ 
         display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' },
         minHeight: '100vh', 
-        bgcolor: 'background.default', 
+        bgcolor: '#030712', 
         position: 'relative', 
         overflow: 'hidden',
-        transition: 'background-color 0.3s ease',
       }}
     >
-      {/* Decorative Blur Orbs */}
-      <Box 
-        sx={{ 
-          position: 'absolute', 
-          top: -150, 
-          right: -150, 
-          width: '40vw', 
-          height: '40vw', 
-          maxWidth: 500, 
-          borderRadius: '50%', 
-          filter: 'blur(120px)', 
-          pointerEvents: 'none', 
-          zIndex: 0, 
-          opacity: 0.25, 
-          animation: 'pulseGlow 10s ease-in-out infinite alternate',
-          background: `radial-gradient(circle, ${theme.palette.primary.main} 0%, transparent 70%)`,
-        }}
-      />
-      <Box 
-        sx={{ 
-          position: 'absolute', 
-          bottom: -150, 
-          left: -150, 
-          width: '40vw', 
-          height: '40vw', 
-          maxWidth: 500, 
-          borderRadius: '50%', 
-          filter: 'blur(120px)', 
-          pointerEvents: 'none', 
-          zIndex: 0, 
-          opacity: 0.25, 
-          animation: 'pulseGlow 10s ease-in-out infinite alternate',
-          background: `radial-gradient(circle, ${theme.palette.secondary.main} 0%, transparent 70%)`,
-        }}
-      />
-
-      {/* Sidebar Nav */}
+      {/* ENTERPRISE MINI SIDEBAR (FLOATING OVERLAY ON HOVER) */}
       <Box 
         component="aside"
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
         sx={{ 
-          width: { xs: '100%', md: 280 },
-          borderRight: { xs: 0, md: 1 },
-          borderBottom: { xs: 1, md: 0 },
-          borderColor: 'divider', 
-          bgcolor: 'background.paper', 
-          backdropFilter: 'blur(16px)', 
-          p: 3, 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: isSidebarHovered ? 260 : 64,
+          bgcolor: '#090d16', 
+          borderRight: '1px solid #1e293b', 
+          zIndex: 1200,
+          p: isSidebarHovered ? 2 : 1.25, 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: 4, 
-          zIndex: 10,
-          transition: 'background-color 0.3s ease, border-color 0.3s ease',
+          gap: 3,
+          boxShadow: isSidebarHovered ? '8px 0 30px rgba(0,0,0,0.7)' : 'none',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease',
+          overflowX: 'hidden',
+          whiteSpace: 'nowrap',
         }}
       >
         {/* Logo Heading */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 0.5, py: 1 }}>
           <Box 
             component="img"
-            src="/logoOnlyBio.png"
+            src="/Logo Bionics.png"
             alt="CCTV Analytics Logo"
             sx={{ 
-              width: 32, 
               height: 32, 
+              width: 32,
               objectFit: 'contain',
+              flexShrink: 0,
             }}
           />
-          <Typography variant="h6" component="span" sx={{ fontWeight: 800, letterSpacing: '-0.025em' }}>
-            CCTV Analytics
-          </Typography>
+          {isSidebarHovered && (
+            <Typography variant="subtitle1" component="span" sx={{ fontWeight: 800, color: '#38bdf8', letterSpacing: '0.5px' }}>
+              CCTV Analytics
+            </Typography>
+          )}
         </Box>
 
         {/* Navigation Links */}
@@ -147,38 +128,31 @@ export const FullLayout: React.FC = () => {
                     onClick={() => navigate(tab.path)}
                     selected={isSelected}
                     sx={{
-                      borderRadius: 2.5,
-                      px: 2,
+                      borderRadius: '4px',
+                      px: isSidebarHovered ? 1.5 : 1.25,
                       py: 1.25,
-                      color: isSelected ? 'primary.main' : 'text.secondary',
-                      bgcolor: isSelected 
-                        ? 'rgba(225, 29, 72, 0.08)'
-                        : 'transparent',
+                      color: isSelected ? '#38bdf8' : '#94a3b8',
+                      bgcolor: isSelected ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                      borderLeft: isSelected ? '3px solid #38bdf8' : '3px solid transparent',
                       '&:hover': {
-                        bgcolor: 'rgba(225, 29, 72, 0.04)',
-                        color: 'text.primary',
+                        bgcolor: 'rgba(56, 189, 248, 0.08)',
+                        color: '#f8fafc',
                       },
-                      '&.Mui-selected': {
-                        bgcolor: isSelected 
-                          ? 'rgba(225, 29, 72, 0.08)'
-                          : 'transparent',
-                        '&:hover': {
-                          bgcolor: 'rgba(225, 29, 72, 0.12)',
-                        },
-                      },
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
                       {tab.icon}
                     </ListItemIcon>
-                    <ListItemText 
-                      primary={
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.925rem' }}>
-                          {tab.label}
-                        </Typography>
-                      } 
-                    />
+                    {isSidebarHovered && (
+                      <ListItemText 
+                        primary={
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                            {tab.label}
+                          </Typography>
+                        } 
+                      />
+                    )}
                   </ListItemButton>
                 </ListItem>
               );
@@ -187,82 +161,96 @@ export const FullLayout: React.FC = () => {
         </Box>
 
         {/* User Profile & Log Out */}
-        <Box 
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-            border: '1px solid',
-            borderColor: 'divider',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              LOGGED IN AS
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              {currentUser.username}
-            </Typography>
-          </Box>
-          <Button 
-            variant="outlined" 
-            color="error" 
-            size="small" 
-            fullWidth
-            onClick={() => {
-              localStorage.clear();
-              queryClient.clear();
-              navigate('/login');
+        {isSidebarHovered && (
+          <Box 
+            sx={{
+              p: 1.5,
+              borderRadius: '4px',
+              bgcolor: '#0f172a',
+              border: '1px solid #1e293b',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
             }}
           >
-            Log Out
-          </Button>
-        </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, fontSize: '10px' }}>
+              OPERATOR ACCOUNT
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 800, color: '#f8fafc' }}>
+              Admin Operator
+            </Typography>
+            <Button 
+              variant="outlined" 
+              color="error" 
+              size="small" 
+              fullWidth
+              onClick={() => {
+                localStorage.clear();
+                queryClient.clear();
+                navigate('/login');
+              }}
+              sx={{ fontSize: '11px', py: 0.25 }}
+            >
+              Log Out
+            </Button>
+          </Box>
+        )}
       </Box>
 
-      {/* Main Panel Content */}
+      {/* Main Content Area (Offset by 64px mini-sidebar width constant) */}
       <Box 
         component="main"
         sx={{ 
           flexGrow: 1, 
-          p: { xs: 3, md: 5 }, 
+          ml: '64px',
+          p: isMonitoringPage ? 1.5 : 3, 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: 4, 
-          maxHeight: { xs: 'none', md: '100vh' },
+          gap: isMonitoringPage ? 1.5 : 3, 
+          minHeight: '100vh',
+          bgcolor: '#030712',
           overflowY: 'auto',
           zIndex: 5,
         }}
       >
-        {/* Header */}
-        <Box 
-          component="header"
-          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-        >
-          <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 800,
-                background: `linear-gradient(135deg, ${theme.palette.text.primary} 30%, ${theme.palette.primary.main} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              {activeTab.label}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {currentDate}
-            </Typography>
+        {/* Top Header - Omitted on Monitoring page or customized */}
+        {!isMonitoringPage ? (
+          <Box 
+            component="header"
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <Box>
+              <Typography variant="h5" component="h1" sx={{ fontWeight: 800, color: '#f8fafc' }}>
+                {activeTab.label}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {currentDateFormatted}
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        ) : (
+          /* SOC Monitoring Custom Top Bar Header */
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#090d16', p: 1, px: 2, borderRadius: '4px', border: '1px solid #1e293b' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, bgcolor: '#22c55e', borderRadius: '50%', boxShadow: '0 0 8px #22c55e' }} />
+              <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#38bdf8', letterSpacing: '0.8px', fontFamily: 'monospace' }}>
+                SECURITY OPERATIONS CENTER (SOC) MONITORING
+              </Typography>
+            </Box>
 
-        {/* Render Page Subroutes */}
-        <Box sx={{ animation: 'fadeIn 0.6s ease' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#94a3b8' }}>
+                <IconClock size={16} color="#38bdf8" />
+                <Typography variant="caption" sx={{ fontWeight: 800, color: '#f8fafc', fontFamily: 'monospace', fontSize: '12px' }}>
+                  {currentDateFormatted} | {localTime}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Page Subroute */}
+        <Box sx={{ animation: 'fadeIn 0.4s ease' }}>
           <Outlet />
         </Box>
       </Box>

@@ -76,6 +76,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   
   // Anchoring dropdown state to the outer container instead of just flag button
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuWidth, setMenuWidth] = useState<number | string>('auto');
   const openMenu = Boolean(anchorEl);
   
   // Search query inside menu
@@ -99,6 +100,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   }, [searchQuery]);
 
   const handleOpenMenu = () => {
+    if (containerRef.current) {
+      setMenuWidth(containerRef.current.offsetWidth);
+    }
     setAnchorEl(containerRef.current);
   };
 
@@ -243,10 +247,10 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           paper: {
             sx: {
               mt: 1,
-              borderRadius: 1, // User changed from 2.5 to 1
+              borderRadius: 1,
               boxShadow: theme.shadows[8],
               border: `1px solid ${theme.palette.divider}`,
-              width: containerRef.current ? containerRef.current.offsetWidth : 'auto',
+              width: menuWidth,
               bgcolor: theme.palette.mode === 'light' ? '#ffffff' : '#0f172a',
               overflow: 'hidden',
               '& .MuiMenu-list': {
