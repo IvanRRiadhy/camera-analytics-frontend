@@ -1,16 +1,17 @@
-# FrontEnd Sprint Status Report — Platform v1.0.0
+# FrontEnd Sprint & Milestone Status Report — Platform v2.0.0
+
+**Last Updated**: October 27, 2026
 
 ---
 
-## Overall Status: 🟢 PHASE 1 COMPLETE | 🔵 PHASE 2 IN PROGRESS
+## Overall Status: 🟢 PHASE 1 COMPLETE | 🔵 PHASE 2 ACTIVE (v2.0.0)
 
 | Feature / Subsystem | Status | Tech Stack | Verification |
-|---|---|---|---|
-| **Vite & React 19 SPA Setup** | ✅ COMPLETE | Vite 8 + React 19 + TypeScript | `npm run build` PASS |
-| **Theme & Style System** | ✅ COMPLETE | MUI v9 + Emotion + `@tabler/icons` | Visual & Token Verification |
-| **Layout & Sidebar Drawer** | ✅ COMPLETE | `FullLayout.tsx` | Responsive Desktop & Mobile |
-| **Auth & Guest Guards** | ✅ COMPLETE | `router.tsx` (`AuthGuard`, `GuestGuard`) | Route protection verified |
-| **Views (`Dashboard`, `Cameras`, `Rooms`)** | ✅ COMPLETE | React views + ApexCharts | Layout & telemetry rendered |
-| **Views (`Settings`, `Login`, `Register`)** | ✅ COMPLETE | React form components | View state verified |
-| **API Integration Layer** | 🟡 IN PROGRESS | Axios + TanStack Query v5 | Configured, awaiting API connection |
-| **Live Video Player Overlay** | 🔴 PLANNED | Canvas / WebRTC | Next sprint objective |
+| :--- | :--- | :--- | :--- |
+| **Vite & React 19 SPA Foundation** | ✅ COMPLETE | Vite + React 19 + TypeScript | `npm run build` PASS |
+| **Enterprise Theme & Layout Shell** | ✅ COMPLETE | MUI + Emotion + `@tabler/icons` (`FullLayout.tsx`) | Visual & Responsive Verification |
+| **Route Guards (`AuthGuard`, `GuestGuard`)** | ✅ COMPLETE | React Router v7 (`router.tsx`) | Route Protection Verified |
+| **6-Tier Spatial Hierarchy & Rooms UI** | ✅ COMPLETE | Tree Navigation + Spatial CRUD Modals | Component & State Verified |
+| **Interactive Polygon Zone Editor** | ✅ COMPLETE | HTML5 Canvas Polygon Vertex Editor | Coordinate Normalization Verified |
+| **ADR-011 Real-Time Telemetry Store** | ✅ COMPLETE | `@microsoft/signalr` (`/hubs/telemetry`) + DevTools | 1Hz Snapshot Stream Verified |
+| **Live REST & Evidence Viewer Integration** | 🔵 IN PROGRESS | TanStack Query v5 + S3 Dual Evidence Viewer | Active Phase 2 Integration |
