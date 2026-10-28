@@ -171,6 +171,8 @@ export const selectAllEvents = (state: AnalyticsEventStoreState): MonitoringEven
   return state.events;
 };
 
+const filteredEventsCache = new WeakMap<MonitoringEvent[], Map<string, MonitoringEvent[]>>();
+
 export const selectFilteredEvents = (
   state: AnalyticsEventStoreState,
   categoryFilter: string
@@ -178,7 +180,19 @@ export const selectFilteredEvents = (
   if (!categoryFilter || categoryFilter === 'ALL') {
     return state.events;
   }
-  return state.events.filter((e) => e.pluginCategory === categoryFilter);
+
+  let byCategory = filteredEventsCache.get(state.events);
+  if (!byCategory) {
+    byCategory = new Map();
+    filteredEventsCache.set(state.events, byCategory);
+  }
+
+  const cached = byCategory.get(categoryFilter);
+  if (cached) return cached;
+
+  const filtered = state.events.filter((e) => e.pluginCategory === categoryFilter);
+  byCategory.set(categoryFilter, filtered);
+  return filtered;
 };
 
 export const selectTotalEventCount = (state: AnalyticsEventStoreState): number => {

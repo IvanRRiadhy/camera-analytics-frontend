@@ -219,10 +219,22 @@ export const selectSnapshotByCameraId = (
   return state.snapshotsByCameraId[cameraId];
 };
 
+const EMPTY_SNAPSHOTS: RuntimeSnapshot[] = [];
+const allSnapshotsCache = new WeakMap<Record<string, RuntimeSnapshot>, RuntimeSnapshot[]>();
+
 export const selectAllSnapshots = (
   state: RuntimeStoreState
 ): RuntimeSnapshot[] => {
-  return Object.values(state.snapshotsByCameraId);
+  const map = state.snapshotsByCameraId;
+  if (!map) return EMPTY_SNAPSHOTS;
+
+  const cached = allSnapshotsCache.get(map);
+  if (cached) return cached;
+
+  const list = Object.values(map);
+  const result = list.length === 0 ? EMPTY_SNAPSHOTS : list;
+  allSnapshotsCache.set(map, result);
+  return result;
 };
 
 export const selectTotalPeopleCount = (
