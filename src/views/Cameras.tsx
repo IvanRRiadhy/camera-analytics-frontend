@@ -187,20 +187,30 @@ export const Cameras: React.FC = () => {
   // Filtered zones for the camera preview dialog
   const roomZones = useMemo(() => {
     if (!previewCamera) return [];
-    return zones.filter((z) => z.roomId === previewCamera.roomId);
+    return zones.filter(
+      (z) =>
+        z.roomId?.toLowerCase() === previewCamera.roomId?.toLowerCase() ||
+        z.roomId?.toLowerCase() === previewCamera.id?.toLowerCase()
+    );
   }, [zones, previewCamera]);
 
   const cameraZones = useMemo(() => {
     if (!previewCamera) return [];
     return zones.filter((z) =>
-      z.cameraConfigs.some((config) => config.cameraId === previewCamera.id)
+      Array.isArray(z.cameraConfigs) &&
+      z.cameraConfigs.some(
+        (config) => config.cameraId?.toLowerCase() === previewCamera.id?.toLowerCase()
+      )
     );
   }, [zones, previewCamera]);
 
   const unmappedRoomZones = useMemo(() => {
     if (!previewCamera) return [];
     return roomZones.filter(
-      (z) => !z.cameraConfigs.some((config) => config.cameraId === previewCamera.id)
+      (z) =>
+        !z.cameraConfigs?.some(
+          (config) => config.cameraId?.toLowerCase() === previewCamera.id?.toLowerCase()
+        )
     );
   }, [roomZones, previewCamera]);
 
@@ -630,8 +640,10 @@ export const Cameras: React.FC = () => {
                   >
                     {/* Render saved camera zones */}
                     {cameraZones.map((z) => {
-                      const config = z.cameraConfigs.find((c) => c.cameraId === previewCamera.id);
-                      if (!config) return null;
+                      const config = z.cameraConfigs?.find(
+                        (c) => c.cameraId?.toLowerCase() === previewCamera.id?.toLowerCase()
+                      );
+                      if (!config || !Array.isArray(config.polygon) || config.polygon.length === 0) return null;
                       
                       const isHovered = hoveredZoneId === z.id;
                       const pointsStr = config.polygon
@@ -856,8 +868,10 @@ export const Cameras: React.FC = () => {
                     ) : (
                       <List sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 0, overflowY: 'auto', maxHeight: 280 }}>
                         {cameraZones.map((z) => {
-                          const config = z.cameraConfigs.find(c => c.cameraId === previewCamera.id);
-                          const coordsCount = config?.polygon.length || 0;
+                          const config = z.cameraConfigs?.find(
+                            (c) => c.cameraId?.toLowerCase() === previewCamera.id?.toLowerCase()
+                          );
+                          const coordsCount = Array.isArray(config?.polygon) ? config.polygon.length : 0;
                           return (
                             <ListItem 
                               key={z.id}

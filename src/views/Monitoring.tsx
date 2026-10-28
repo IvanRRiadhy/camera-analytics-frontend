@@ -557,7 +557,7 @@ export const Monitoring: React.FC = () => {
               {selectedCameraMeta.rtspUrl ? (
                 <UniversalVideoPlayer
                   streamUrl={selectedCameraMeta.rtspUrl}
-                  engineWsUrl="ws://192.168.1.195:8282"
+                  engineWsUrl="ws://192.168.1.166:8282"
                   style={{ width: '100%', height: '100%' }}
                 />
               ) : (

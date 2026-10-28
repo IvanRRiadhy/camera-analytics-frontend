@@ -32,7 +32,7 @@ export const useZones = () => {
     const poly = typeof cameraIdOrConfig === 'string' ? polygon || [] : cameraIdOrConfig.polygon;
 
     const existingConfigs = zone.cameraConfigs || [];
-    const filtered = existingConfigs.filter(c => c.cameraId !== cameraId);
+    const filtered = existingConfigs.filter(c => c.cameraId?.toLowerCase() !== cameraId?.toLowerCase());
     const updatedConfigs = [...filtered, { cameraId, polygon: poly }];
     await updateZone(zoneId, { ...zone, cameraConfigs: updatedConfigs });
   };
@@ -41,7 +41,7 @@ export const useZones = () => {
     const zone = zones.find(z => z.id === zoneId);
     if (!zone) return;
     const existingConfigs = zone.cameraConfigs || [];
-    const updatedConfigs = existingConfigs.filter(c => c.cameraId !== cameraId);
+    const updatedConfigs = existingConfigs.filter(c => c.cameraId?.toLowerCase() !== cameraId?.toLowerCase());
     await updateZone(zoneId, { ...zone, cameraConfigs: updatedConfigs });
   };
 
